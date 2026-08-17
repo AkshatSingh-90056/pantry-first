@@ -1,10 +1,25 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import './App.css';
 import { getApiErrorMessage } from './api/apiClient';
 import { searchRecipes } from './api/recipeService';
 import StateMessage from './components/common/StateMessage';
 import IngredientSearch from './components/search/IngredientSearch';
 import RecipeGrid from './components/recipes/RecipeGrid';
+import RecipeDetailsPage from './components/recipes/RecipeDetailsPage';
+
+function getRecipeIdFromPath(pathname) {
+  const match = pathname.match(/^\/recipes\/([^/]+)\/?$/);
+
+  if (!match) {
+    return null;
+  }
+
+  try {
+    return decodeURIComponent(match[1]);
+  } catch {
+    return match[1];
+  }
+}
 
 function App() {
   const [ingredients, setIngredients] = useState('');
@@ -13,6 +28,24 @@ function App() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [lastSearch, setLastSearch] = useState('');
+  const [recipeId, setRecipeId] = useState(() => getRecipeIdFromPath(window.location.pathname));
+
+  useEffect(() => {
+    const handlePopState = () => setRecipeId(getRecipeIdFromPath(window.location.pathname));
+    window.addEventListener('popstate', handlePopState);
+
+    return () => window.removeEventListener('popstate', handlePopState);
+  }, []);
+
+  const navigateHome = (event) => {
+    event?.preventDefault();
+
+    if (window.location.pathname !== '/') {
+      window.history.pushState({}, '', '/');
+    }
+
+    setRecipeId(null);
+  };
 
   const handleSearch = async (event, submittedIngredients = ingredients) => {
     event.preventDefault();
@@ -46,13 +79,16 @@ function App() {
   return (
     <div className="app-shell">
       <header className="app-header">
-        <a className="brand" href="/" aria-label="Pantry First home">
+        <a className="brand" href="/" aria-label="Pantry First home" onClick={navigateHome}>
           <span className="brand__mark" aria-hidden="true">PF</span>
           <span>Pantry First</span>
         </a>
         <span className="header-note">Cook what you have</span>
       </header>
 
+      {recipeId ? (
+        <RecipeDetailsPage recipeId={recipeId} onBack={navigateHome} />
+      ) : (
       <main>
         <section className="hero-section">
           <p className="eyebrow">Less waste. More good meals.</p>
@@ -108,6 +144,7 @@ function App() {
           )}
         </section>
       </main>
+      )}
 
       <footer className="app-footer">Pantry First · Make the most of what&apos;s already here.</footer>
     </div>

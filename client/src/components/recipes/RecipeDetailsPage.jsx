@@ -1,0 +1,224 @@
+import { useEffect, useState } from 'react';
+import { getApiErrorMessage } from '../../api/apiClient';
+import { getRecipeById } from '../../api/recipeService';
+import PantryMatch from './PantryMatch';
+import StateMessage from '../common/StateMessage';
+
+function formatTag(tag) {
+  return tag
+    .split('-')
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ');
+}
+
+function formatIngredient(ingredient) {
+  const amount = ingredient.amount !== null && ingredient.amount !== undefined
+    ? `${ingredient.amount}${ingredient.unit ? ` ${ingredient.unit}` : ''}`
+    : '';
+  const name = ingredient.name || ingredient.original || 'Ingredient unavailable';
+
+  if (!amount && ingredient.original) {
+    return ingredient.original;
+  }
+
+  return [amount, name].filter(Boolean).join(' ');
+}
+
+function RecipeDetailsPage({ recipeId, onBack }) {
+  const [requestState, setRequestState] = useState({
+    recipeId: null,
+    status: 'loading',
+    recipe: null,
+    error: null,
+  });
+  const [failedImageId, setFailedImageId] = useState(null);
+
+  useEffect(() => {
+    let active = true;
+
+    getRecipeById(recipeId)
+      .then((nextRecipe) => {
+        if (active) {
+          setRequestState({ recipeId, status: 'success', recipe: nextRecipe, error: null });
+        }
+      })
+      .catch((requestError) => {
+        if (active) {
+          setRequestState({ recipeId, status: 'error', recipe: null, error: requestError });
+        }
+      })
+
+    return () => {
+      active = false;
+    };
+  }, [recipeId]);
+
+  const currentState = requestState.recipeId === recipeId
+    ? requestState
+    : { status: 'loading', recipe: null, error: null };
+  const { recipe, error } = currentState;
+
+  if (currentState.status === 'loading') {
+    return (
+      <main className="recipe-detail-page">
+        <StateMessage
+          variant="loading"
+          title="Loading recipe"
+          description="Bringing the full recipe together."
+        />
+      </main>
+    );
+  }
+
+  if (error || !recipe) {
+    const isNotFound = error?.response?.status === 404;
+
+    return (
+      <main className="recipe-detail-page">
+        <StateMessage
+          variant="error"
+          title={isNotFound ? 'Recipe not found' : 'Unable to load this recipe right now'}
+          description={getApiErrorMessage(error, 'Please return to your recipe search and try again.')}
+          action={<button className="button button--secondary" type="button" onClick={onBack}>Back to recipes</button>}
+        />
+      </main>
+    );
+  }
+
+  const timing = [
+    ['Prep', recipe.prepMinutes, 'min'],
+    ['Cook', recipe.cookMinutes, 'min'],
+    ['Total', recipe.readyInMinutes, 'min'],
+    ['Servings', recipe.servings, ''],
+  ].filter(([, value]) => value !== null && value !== undefined);
+  const nutritionRows = [
+    ['Calories', recipe.nutrition?.calories, 'kcal'],
+    ['Protein', recipe.nutrition?.proteinGrams, 'g'],
+    ['Carbohydrates', recipe.nutrition?.carbohydratesGrams, 'g'],
+    ['Fat', recipe.nutrition?.fatGrams, 'g'],
+  ].filter(([, value]) => value !== null && value !== undefined);
+
+  return (
+    <main className="recipe-detail-page">
+      <div className="recipe-detail-page__inner">
+        <button className="recipe-detail-page__back" type="button" onClick={onBack}>
+          <span aria-hidden="true">←</span> Back to recipes
+        </button>
+
+        <div className="recipe-detail-hero">
+          <div className="recipe-detail-hero__image-wrap">
+            {recipe.image && failedImageId !== recipeId ? (
+              <img
+                className="recipe-detail-hero__image"
+                src={recipe.image}
+                alt={`${recipe.title || 'Recipe'} recipe`}
+                onError={() => setFailedImageId(recipeId)}
+              />
+            ) : (
+              <div className="recipe-detail-hero__image-placeholder">Image unavailable</div>
+            )}
+          </div>
+
+          <div className="recipe-detail-hero__content">
+            <div className="recipe-detail-tags">
+              {recipe.diets.map((diet) => <span key={diet}>{formatTag(diet)}</span>)}
+              {recipe.cuisines.map((cuisine) => <span key={cuisine}>{cuisine}</span>)}
+            </div>
+            <h1>{recipe.title}</h1>
+            {recipe.summary && <p className="recipe-detail-summary">{recipe.summary}</p>}
+
+            {timing.length > 0 && (
+              <dl className="recipe-detail-timing">
+                {timing.map(([label, value, unit]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}{unit ? ` ${unit}` : ''}</dd>
+                  </div>
+                ))}
+              </dl>
+            )}
+
+            {recipe.pantryMatch && (
+              <div className="recipe-detail-match">
+                <PantryMatch recipe={recipe.pantryMatch} />
+                <div>
+                  <strong>{recipe.pantryMatch.matchPercent}% of ingredients matched</strong>
+                  <p>{recipe.pantryMatch.usedIngredientCount} on hand · {recipe.pantryMatch.missedIngredientCount} still needed</p>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+
+        <div className="recipe-detail-content">
+          <div className="recipe-detail-main">
+            <section aria-labelledby="recipe-steps-heading">
+              <p className="eyebrow">Method</p>
+              <h2 id="recipe-steps-heading">Instructions</h2>
+              {recipe.steps.length > 0 ? (
+                <ol className="recipe-detail-steps">
+                  {recipe.steps.map((step) => (
+                    <li key={step.number}>
+                      <span>{step.number}</span>
+                      <p>{step.text}</p>
+                    </li>
+                  ))}
+                </ol>
+              ) : (
+                <p className="recipe-detail-muted">Instructions are unavailable for this recipe.</p>
+              )}
+            </section>
+
+            {recipe.equipment.length > 0 && (
+              <section aria-labelledby="recipe-equipment-heading">
+                <p className="eyebrow">Before you start</p>
+                <h2 id="recipe-equipment-heading">Equipment</h2>
+                <ul className="recipe-detail-list">
+                  {recipe.equipment.map((item) => <li key={item}>{item}</li>)}
+                </ul>
+              </section>
+            )}
+
+            <section aria-labelledby="recipe-nutrition-heading">
+              <p className="eyebrow">Per serving</p>
+              <h2 id="recipe-nutrition-heading">Nutrition</h2>
+              {nutritionRows.length > 0 ? (
+                <dl className="recipe-detail-nutrition">
+                  {nutritionRows.map(([label, value, unit]) => (
+                    <div key={label}>
+                      <dt>{label}</dt>
+                      <dd>{value} <span>{unit}</span></dd>
+                    </div>
+                  ))}
+                </dl>
+              ) : (
+                <p className="recipe-detail-muted">Nutrition information is unavailable.</p>
+              )}
+            </section>
+          </div>
+
+          <aside className="recipe-detail-ingredients" aria-labelledby="recipe-ingredients-heading">
+            <p className="eyebrow">What you&apos;ll need</p>
+            <h2 id="recipe-ingredients-heading">Ingredients</h2>
+            {recipe.ingredients.length > 0 ? (
+              <ul className="recipe-detail-list">
+                {recipe.ingredients.map((ingredient, index) => (
+                  <li key={`${ingredient.name || ingredient.original}-${index}`}>
+                    {formatIngredient(ingredient)}
+                    {ingredient.note && ingredient.amount !== null && (
+                      <span className="recipe-detail-note"> · {ingredient.note}</span>
+                    )}
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <p className="recipe-detail-muted">Ingredients are unavailable.</p>
+            )}
+          </aside>
+        </div>
+      </div>
+    </main>
+  );
+}
+
+export default RecipeDetailsPage;

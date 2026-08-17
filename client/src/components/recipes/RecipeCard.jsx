@@ -42,11 +42,9 @@ function RecipeCard({ recipe }) {
       <div className="recipe-card__footer">
         <a
           className="button button--secondary"
-          href={`https://www.google.com/search?q=${encodeURIComponent(`${recipe.title || 'recipe'} recipe`)}`}
-          target="_blank"
-          rel="noopener noreferrer"
+          href={`/recipes/${encodeURIComponent(recipe.id)}`}
         >
-          View recipe <span aria-hidden="true">↗</span>
+          View recipe <span aria-hidden="true">→</span>
         </a>
       </div>
     </article>

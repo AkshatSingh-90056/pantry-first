@@ -6,7 +6,13 @@ const apiClient = axios.create({
 });
 
 export function getApiErrorMessage(error, fallback = 'Something went wrong. Please try again.') {
-  return error?.response?.data?.error || error?.message || fallback;
+  const apiError = error?.response?.data?.error;
+
+  if (typeof apiError === 'string') {
+    return apiError;
+  }
+
+  return apiError?.message || error?.message || fallback;
 }
 
 export default apiClient;
