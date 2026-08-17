@@ -594,6 +594,66 @@ h1 {
   font-weight: 750;
 }
 
+.recipe-detail-serving-control {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  margin-top: 18px;
+}
+
+.recipe-detail-serving-control__label {
+  color: var(--muted);
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.recipe-detail-serving-control__actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.recipe-detail-serving-control__button {
+  display: grid;
+  width: 32px;
+  height: 32px;
+  padding: 0;
+  place-items: center;
+  border: 1px solid #cdd8cd;
+  border-radius: 7px;
+  color: var(--green-dark);
+  background: #fff;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.recipe-detail-serving-control__button:hover:not(:disabled) {
+  border-color: var(--green);
+  background: var(--sage);
+}
+
+.recipe-detail-serving-control__button:disabled {
+  cursor: not-allowed;
+  opacity: 0.45;
+}
+
+.recipe-detail-serving-control__value {
+  min-width: 28px;
+  color: var(--ink);
+  font-size: 16px;
+  font-weight: 800;
+  text-align: center;
+}
+
+.recipe-detail-serving-control__unavailable {
+  color: var(--muted);
+  font-size: 13px;
+}
+
 .recipe-detail-match {
   display: flex;
   align-items: center;

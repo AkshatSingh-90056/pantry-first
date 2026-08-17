@@ -12,17 +12,35 @@ function formatTag(tag) {
     .join(' ');
 }
 
-function formatIngredient(ingredient) {
-  const amount = ingredient.amount !== null && ingredient.amount !== undefined
-    ? `${ingredient.amount}${ingredient.unit ? ` ${ingredient.unit}` : ''}`
-    : '';
-  const name = ingredient.name || ingredient.original || 'Ingredient unavailable';
+function isValidServingCount(value) {
+  return typeof value === 'number' && Number.isFinite(value) && value > 0;
+}
 
-  if (!amount && ingredient.original) {
-    return ingredient.original;
+function formatAmount(value) {
+  return String(Math.round((value + Number.EPSILON) * 100) / 100);
+}
+
+function formatIngredient(ingredient, desiredServings, originalServings) {
+  const hasNumericAmount = typeof ingredient.amount === 'number' && Number.isFinite(ingredient.amount);
+  const canDisplayNumericAmount = hasNumericAmount && ingredient.amount >= 0;
+  const canScale = hasNumericAmount
+    && ingredient.amount > 0
+    && isValidServingCount(originalServings)
+    && isValidServingCount(desiredServings);
+  const displayAmount = canScale
+    ? ingredient.amount * (desiredServings / originalServings)
+    : canDisplayNumericAmount
+      ? ingredient.amount
+      : null;
+
+  if (displayAmount === null || !Number.isFinite(displayAmount)) {
+    return ingredient.original || ingredient.name || 'Ingredient unavailable';
   }
 
-  return [amount, name].filter(Boolean).join(' ');
+  const amount = `${formatAmount(displayAmount)}${ingredient.unit ? ` ${ingredient.unit}` : ''}`;
+  const name = ingredient.name || 'Ingredient unavailable';
+
+  return `${amount} ${name}`;
 }
 
 function RecipeDetailsPage({ recipeId, onBack }) {
@@ -34,6 +52,7 @@ function RecipeDetailsPage({ recipeId, onBack }) {
   });
   const [failedImageId, setFailedImageId] = useState(null);
   const [isCooking, setIsCooking] = useState(false);
+  const [desiredServings, setDesiredServings] = useState(null);
 
   useEffect(() => {
     let active = true;
@@ -41,6 +60,7 @@ function RecipeDetailsPage({ recipeId, onBack }) {
     getRecipeById(recipeId)
       .then((nextRecipe) => {
         if (active) {
+          setDesiredServings(isValidServingCount(nextRecipe.servings) ? nextRecipe.servings : null);
           setRequestState({ recipeId, status: 'success', recipe: nextRecipe, error: null });
         }
       })
@@ -91,7 +111,6 @@ function RecipeDetailsPage({ recipeId, onBack }) {
     ['Prep', recipe.prepMinutes, 'min'],
     ['Cook', recipe.cookMinutes, 'min'],
     ['Total', recipe.readyInMinutes, 'min'],
-    ['Servings', recipe.servings, ''],
   ].filter(([, value]) => value !== null && value !== undefined);
   const nutritionRows = [
     ['Calories', recipe.nutrition?.calories, 'kcal'],
@@ -102,6 +121,8 @@ function RecipeDetailsPage({ recipeId, onBack }) {
   const usableSteps = Array.isArray(recipe.steps)
     ? recipe.steps.filter((step) => typeof step?.text === 'string' && step.text.trim())
     : [];
+  const originalServings = isValidServingCount(recipe.servings) ? recipe.servings : null;
+  const displayedServings = originalServings ? desiredServings ?? originalServings : null;
 
   if (isCooking) {
     return (
@@ -150,6 +171,34 @@ function RecipeDetailsPage({ recipeId, onBack }) {
                 ))}
               </dl>
             )}
+
+            <div className="recipe-detail-serving-control" aria-label="Serving size">
+              <span className="recipe-detail-serving-control__label">Servings</span>
+              {displayedServings ? (
+                <div className="recipe-detail-serving-control__actions">
+                  <button
+                    className="recipe-detail-serving-control__button"
+                    type="button"
+                    aria-label="Decrease servings"
+                    onClick={() => setDesiredServings(Math.max(1, displayedServings - 1))}
+                    disabled={displayedServings <= 1}
+                  >
+                    −
+                  </button>
+                  <span className="recipe-detail-serving-control__value" aria-live="polite">{displayedServings}</span>
+                  <button
+                    className="recipe-detail-serving-control__button"
+                    type="button"
+                    aria-label="Increase servings"
+                    onClick={() => setDesiredServings(displayedServings + 1)}
+                  >
+                    +
+                  </button>
+                </div>
+              ) : (
+                <span className="recipe-detail-serving-control__unavailable">Servings unavailable</span>
+              )}
+            </div>
 
             {usableSteps.length > 0 && (
               <button className="button button--primary recipe-detail-start" type="button" onClick={() => setIsCooking(true)}>
@@ -223,7 +272,7 @@ function RecipeDetailsPage({ recipeId, onBack }) {
               <ul className="recipe-detail-list">
                 {recipe.ingredients.map((ingredient, index) => (
                   <li key={`${ingredient.name || ingredient.original}-${index}`}>
-                    {formatIngredient(ingredient)}
+                    {formatIngredient(ingredient, displayedServings, originalServings)}
                     {ingredient.note && ingredient.amount !== null && (
                       <span className="recipe-detail-note"> · {ingredient.note}</span>
                     )}
