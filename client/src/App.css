@@ -246,6 +246,40 @@ h1 {
   color: var(--coral);
 }
 
+.ingredient-search__filters {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: center;
+  gap: 10px 14px;
+  margin-top: 18px;
+  color: var(--muted);
+  font-size: 12px;
+}
+
+.ingredient-search__filters > span {
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.ingredient-filter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  color: var(--green-dark);
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.ingredient-filter input {
+  width: 16px;
+  height: 16px;
+  margin: 0;
+  accent-color: var(--green);
+  cursor: pointer;
+}
+
 .results-section {
   max-width: 1080px;
   margin: 0 auto;

@@ -2,8 +2,20 @@ import { useState } from 'react';
 import { parseIngredientInput } from '../../utils/recipeUtils';
 
 const suggestions = ['chicken', 'rice', 'garlic', 'tomatoes'];
+const dietaryOptions = [
+  ['vegetarian', 'Vegetarian'],
+  ['vegan', 'Vegan'],
+  ['glutenFree', 'Gluten-free'],
+];
 
-function IngredientSearch({ value, onChange, onSubmit, isLoading = false }) {
+function IngredientSearch({
+  value,
+  onChange,
+  onSubmit,
+  isLoading = false,
+  dietaryFilters,
+  onDietaryFilterChange,
+}) {
   const [draft, setDraft] = useState('');
   const ingredients = parseIngredientInput(value);
 
@@ -84,6 +96,19 @@ function IngredientSearch({ value, onChange, onSubmit, isLoading = false }) {
           <button type="button" key={suggestion} onClick={() => addIngredient(suggestion)}>
             {suggestion}
           </button>
+        ))}
+      </div>
+      <div className="ingredient-search__filters" role="group" aria-labelledby="dietary-filters-label">
+        <span id="dietary-filters-label">Dietary filters</span>
+        {dietaryOptions.map(([filter, label]) => (
+          <label className="ingredient-filter" key={filter}>
+            <input
+              type="checkbox"
+              checked={Boolean(dietaryFilters[filter])}
+              onChange={(event) => onDietaryFilterChange(filter, event.target.checked)}
+            />
+            {label}
+          </label>
         ))}
       </div>
     </div>

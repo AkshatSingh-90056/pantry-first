@@ -1,8 +1,17 @@
 import apiClient from './apiClient';
 
-export async function searchRecipes(ingredients) {
+export async function searchRecipes(ingredients, dietaryFilters = []) {
+  const params = { ingredients };
+  const selectedDietaryFilters = Array.isArray(dietaryFilters)
+    ? dietaryFilters.filter(Boolean)
+    : [];
+
+  if (selectedDietaryFilters.length) {
+    params.diet = selectedDietaryFilters.join(',');
+  }
+
   const response = await apiClient.get('/recipes', {
-    params: { ingredients },
+    params,
   });
 
   return Array.isArray(response.data) ? response.data : [];

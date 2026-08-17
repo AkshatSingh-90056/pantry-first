@@ -6,6 +6,20 @@ const { mapRecipeSummaries, mapRecipeDetail } = require('./mappers/recipeMapper'
 
 const app = express();
 const PORT = process.env.PORT || 5000;
+const SUPPORTED_DIETARY_FILTERS = new Set(['vegetarian', 'vegan', 'gluten-free']);
+
+function parseDietaryFilters(value) {
+  if (typeof value !== 'string') {
+    return [];
+  }
+
+  return [...new Set(
+    value
+      .split(',')
+      .map((filter) => filter.trim().toLowerCase())
+      .filter((filter) => SUPPORTED_DIETARY_FILTERS.has(filter))
+  )];
+}
 
 function isValidRecipePayload(recipe, requestedId) {
   return Boolean(
@@ -28,13 +42,14 @@ app.get('/api/health', (req, res) => {
 
 app.get('/api/recipes', async (req, res) => {
   const ingredients = typeof req.query.ingredients === 'string' ? req.query.ingredients.trim() : '';
+  const dietaryFilters = parseDietaryFilters(req.query.diet);
 
   if (!ingredients) {
     return res.status(400).json({ error: 'Ingredients query parameter is required.' });
   }
 
   try {
-    const recipes = await findRecipesByIngredients(ingredients);
+    const recipes = await findRecipesByIngredients(ingredients, dietaryFilters);
     return res.status(200).json(mapRecipeSummaries(recipes));
   } catch (error) {
     console.error('Spoonacular API error:', error.response?.data || error.message);

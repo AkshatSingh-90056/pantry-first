@@ -21,6 +21,12 @@ function getRecipeIdFromPath(pathname) {
   }
 }
 
+const dietaryFilterValues = {
+  vegetarian: 'vegetarian',
+  vegan: 'vegan',
+  glutenFree: 'gluten-free',
+};
+
 function App() {
   const [ingredients, setIngredients] = useState('');
   const [recipes, setRecipes] = useState([]);
@@ -28,6 +34,11 @@ function App() {
   const [error, setError] = useState('');
   const [hasSearched, setHasSearched] = useState(false);
   const [lastSearch, setLastSearch] = useState('');
+  const [dietaryFilters, setDietaryFilters] = useState({
+    vegetarian: false,
+    vegan: false,
+    glutenFree: false,
+  });
   const [recipeId, setRecipeId] = useState(() => getRecipeIdFromPath(window.location.pathname));
 
   useEffect(() => {
@@ -65,7 +76,10 @@ function App() {
     setHasSearched(true);
 
     try {
-      const nextRecipes = await searchRecipes(trimmedIngredients);
+      const selectedDietaryFilters = Object.entries(dietaryFilters)
+        .filter(([, selected]) => selected)
+        .map(([filter]) => dietaryFilterValues[filter]);
+      const nextRecipes = await searchRecipes(trimmedIngredients, selectedDietaryFilters);
       setRecipes(nextRecipes);
     } catch (requestError) {
       console.error('Error fetching recipes:', requestError);
@@ -99,6 +113,10 @@ function App() {
             onChange={setIngredients}
             onSubmit={handleSearch}
             isLoading={loading}
+            dietaryFilters={dietaryFilters}
+            onDietaryFilterChange={(filter, selected) => {
+              setDietaryFilters((currentFilters) => ({ ...currentFilters, [filter]: selected }));
+            }}
           />
         </section>
 
