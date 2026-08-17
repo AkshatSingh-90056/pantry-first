@@ -749,6 +749,166 @@ h1 {
   line-height: 1.5;
 }
 
+.recipe-detail-start {
+  margin-top: 22px;
+}
+
+.cooking-mode {
+  border-top: 1px solid var(--line);
+}
+
+.cooking-mode__inner {
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 30px 32px 88px;
+}
+
+.cooking-mode__back {
+  padding: 0;
+  border: 0;
+  color: var(--green);
+  background: transparent;
+  font-size: 14px;
+  font-weight: 750;
+  cursor: pointer;
+}
+
+.cooking-mode__back:hover {
+  color: var(--coral);
+}
+
+.cooking-mode__content {
+  max-width: 760px;
+  margin: 0 auto;
+  padding: 72px 0 42px;
+}
+
+.cooking-mode__heading-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  margin-bottom: 13px;
+}
+
+.cooking-mode__step-count {
+  color: var(--green);
+  font-size: 14px;
+  font-weight: 800;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.cooking-mode__step-number {
+  display: grid;
+  width: 48px;
+  height: 48px;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: var(--green);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+}
+
+.cooking-mode__progress-track {
+  height: 8px;
+  overflow: hidden;
+  margin-bottom: 40px;
+  border-radius: 999px;
+  background: var(--sage);
+}
+
+.cooking-mode__progress-value {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--coral);
+  transition: width 180ms ease;
+}
+
+.cooking-mode__content h1 {
+  max-width: none;
+  margin: 0;
+  color: var(--green-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: clamp(36px, 5vw, 60px);
+  font-weight: 500;
+  letter-spacing: -0.045em;
+  line-height: 1.08;
+  text-align: left;
+}
+
+.cooking-mode__equipment {
+  margin-top: 42px;
+  padding: 20px 22px;
+  border-left: 3px solid var(--coral);
+  background: #fbfcf8;
+}
+
+.cooking-mode__equipment h2 {
+  margin: 0 0 10px;
+  color: var(--green-dark);
+  font-family: Georgia, "Times New Roman", serif;
+  font-size: 22px;
+  font-weight: 600;
+}
+
+.cooking-mode__equipment ul {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 0;
+  margin: 0;
+  list-style: none;
+}
+
+.cooking-mode__equipment li {
+  padding: 6px 10px;
+  border: 1px solid var(--line);
+  border-radius: 6px;
+  color: var(--muted);
+  background: #fff;
+  font-size: 13px;
+}
+
+.cooking-mode__controls {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  gap: 16px;
+  align-items: center;
+  margin-top: 58px;
+}
+
+.cooking-mode__controls .button:last-child {
+  justify-self: end;
+}
+
+.cooking-mode__controls .button:disabled {
+  cursor: not-allowed;
+}
+
+.cooking-mode__controls > span {
+  color: var(--muted);
+  font-size: 13px;
+  font-weight: 700;
+}
+
+.cooking-mode__complete {
+  padding: 90px 0 48px;
+  text-align: center;
+}
+
+.cooking-mode__complete h1 {
+  margin-bottom: 18px;
+  text-align: center;
+}
+
+.cooking-mode__complete p:not(.eyebrow) {
+  margin-bottom: 30px;
+  color: var(--muted);
+  font-size: 16px;
+}
+
 @keyframes pulse {
   0%,
   100% { opacity: 0.45; }
@@ -864,5 +1024,35 @@ h1 {
 
   .recipe-detail-nutrition {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .cooking-mode__inner {
+    padding: 22px 20px 60px;
+  }
+
+  .cooking-mode__content {
+    padding-top: 54px;
+  }
+
+  .cooking-mode__content h1 {
+    font-size: 42px;
+  }
+
+  .cooking-mode__controls {
+    grid-template-columns: 1fr 1fr;
+    gap: 12px;
+    margin-top: 42px;
+  }
+
+  .cooking-mode__controls > span {
+    display: none;
+  }
+
+  .cooking-mode__controls .button {
+    width: 100%;
+  }
+
+  .cooking-mode__complete {
+    padding-top: 68px;
   }
 }

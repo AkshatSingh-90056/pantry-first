@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react';
 import { getApiErrorMessage } from '../../api/apiClient';
 import { getRecipeById } from '../../api/recipeService';
 import PantryMatch from './PantryMatch';
+import CookingMode from './CookingMode';
 import StateMessage from '../common/StateMessage';
 
 function formatTag(tag) {
@@ -32,6 +33,7 @@ function RecipeDetailsPage({ recipeId, onBack }) {
     error: null,
   });
   const [failedImageId, setFailedImageId] = useState(null);
+  const [isCooking, setIsCooking] = useState(false);
 
   useEffect(() => {
     let active = true;
@@ -97,6 +99,17 @@ function RecipeDetailsPage({ recipeId, onBack }) {
     ['Carbohydrates', recipe.nutrition?.carbohydratesGrams, 'g'],
     ['Fat', recipe.nutrition?.fatGrams, 'g'],
   ].filter(([, value]) => value !== null && value !== undefined);
+  const usableSteps = Array.isArray(recipe.steps)
+    ? recipe.steps.filter((step) => typeof step?.text === 'string' && step.text.trim())
+    : [];
+
+  if (isCooking) {
+    return (
+      <main className="recipe-detail-page">
+        <CookingMode steps={usableSteps} onExit={() => setIsCooking(false)} />
+      </main>
+    );
+  }
 
   return (
     <main className="recipe-detail-page">
@@ -138,6 +151,12 @@ function RecipeDetailsPage({ recipeId, onBack }) {
               </dl>
             )}
 
+            {usableSteps.length > 0 && (
+              <button className="button button--primary recipe-detail-start" type="button" onClick={() => setIsCooking(true)}>
+                Start Cooking <span aria-hidden="true">→</span>
+              </button>
+            )}
+
             {recipe.pantryMatch && (
               <div className="recipe-detail-match">
                 <PantryMatch recipe={recipe.pantryMatch} />
@@ -155,11 +174,11 @@ function RecipeDetailsPage({ recipeId, onBack }) {
             <section aria-labelledby="recipe-steps-heading">
               <p className="eyebrow">Method</p>
               <h2 id="recipe-steps-heading">Instructions</h2>
-              {recipe.steps.length > 0 ? (
+              {usableSteps.length > 0 ? (
                 <ol className="recipe-detail-steps">
-                  {recipe.steps.map((step) => (
-                    <li key={step.number}>
-                      <span>{step.number}</span>
+                  {usableSteps.map((step, index) => (
+                    <li key={`${step.number}-${index}`}>
+                      <span>{index + 1}</span>
                       <p>{step.text}</p>
                     </li>
                   ))}

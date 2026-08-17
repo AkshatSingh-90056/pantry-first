@@ -87,7 +87,7 @@ function App() {
       </header>
 
       {recipeId ? (
-        <RecipeDetailsPage recipeId={recipeId} onBack={navigateHome} />
+        <RecipeDetailsPage key={recipeId} recipeId={recipeId} onBack={navigateHome} />
       ) : (
       <main>
         <section className="hero-section">
