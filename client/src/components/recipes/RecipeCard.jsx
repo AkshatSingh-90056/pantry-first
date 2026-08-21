@@ -1,14 +1,20 @@
-import { calculateMatchPercent, formatMinutes, normalizeIngredientList } from '../../utils/recipeUtils';
+import { calculateMatchPercent, formatMinutes, normalizeIngredientList, parseIngredientInput } from '../../utils/recipeUtils';
 import PantryMatch from './PantryMatch';
 
 const fallbackImage = `data:image/svg+xml,${encodeURIComponent(
   '<svg xmlns="http://www.w3.org/2000/svg" width="640" height="420" viewBox="0 0 640 420"><rect width="640" height="420" fill="#e7eee5"/><text x="320" y="210" fill="#356b4b" font-family="Arial, sans-serif" font-size="28" text-anchor="middle">No image available</text></svg>'
 )}`;
 
-function RecipeCard({ recipe }) {
+function RecipeCard({ recipe, pantryIngredients = '' }) {
   const usedIngredients = normalizeIngredientList(recipe.usedIngredients);
   const missedIngredients = normalizeIngredientList(recipe.missedIngredients);
   const matchPercent = calculateMatchPercent(recipe);
+  const uniquePantryIngredients = [...new Map(
+    parseIngredientInput(pantryIngredients).map((ingredient) => [ingredient.toLowerCase(), ingredient])
+  ).values()];
+  const pantryQuery = uniquePantryIngredients.length
+    ? `?ingredients=${encodeURIComponent(uniquePantryIngredients.join(','))}`
+    : '';
 
   return (
     <article className="recipe-card">
@@ -42,7 +48,7 @@ function RecipeCard({ recipe }) {
       <div className="recipe-card__footer">
         <a
           className="button button--secondary"
-          href={`/recipes/${encodeURIComponent(recipe.id)}`}
+          href={`/recipes/${encodeURIComponent(recipe.id)}${pantryQuery}`}
         >
           View recipe <span aria-hidden="true">→</span>
         </a>

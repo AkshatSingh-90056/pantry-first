@@ -4,6 +4,7 @@ import { getRecipeById } from '../../api/recipeService';
 import PantryMatch from './PantryMatch';
 import CookingMode from './CookingMode';
 import StateMessage from '../common/StateMessage';
+import { parseIngredientInput } from '../../utils/recipeUtils';
 
 function formatTag(tag) {
   return tag
@@ -43,7 +44,7 @@ function formatIngredient(ingredient, desiredServings, originalServings) {
   return `${amount} ${name}`;
 }
 
-function RecipeDetailsPage({ recipeId, onBack }) {
+function RecipeDetailsPage({ recipeId, locationSearch = window.location.search, onBack }) {
   const [requestState, setRequestState] = useState({
     recipeId: null,
     status: 'loading',
@@ -57,7 +58,10 @@ function RecipeDetailsPage({ recipeId, onBack }) {
   useEffect(() => {
     let active = true;
 
-    getRecipeById(recipeId)
+    const searchParams = new URLSearchParams(locationSearch);
+    const pantryIngredients = parseIngredientInput(searchParams.get('ingredients') || '');
+
+    getRecipeById(recipeId, pantryIngredients)
       .then((nextRecipe) => {
         if (active) {
           setDesiredServings(isValidServingCount(nextRecipe.servings) ? nextRecipe.servings : null);
@@ -73,7 +77,7 @@ function RecipeDetailsPage({ recipeId, onBack }) {
     return () => {
       active = false;
     };
-  }, [recipeId]);
+  }, [recipeId, locationSearch]);
 
   const currentState = requestState.recipeId === recipeId
     ? requestState
@@ -127,7 +131,11 @@ function RecipeDetailsPage({ recipeId, onBack }) {
   if (isCooking) {
     return (
       <main className="recipe-detail-page">
-        <CookingMode steps={usableSteps} onExit={() => setIsCooking(false)} />
+        <CookingMode
+          steps={usableSteps}
+          ingredients={recipe.ingredients}
+          onExit={() => setIsCooking(false)}
+        />
       </main>
     );
   }

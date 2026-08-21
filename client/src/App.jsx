@@ -40,9 +40,13 @@ function App() {
     glutenFree: false,
   });
   const [recipeId, setRecipeId] = useState(() => getRecipeIdFromPath(window.location.pathname));
+  const [locationSearch, setLocationSearch] = useState(() => window.location.search);
 
   useEffect(() => {
-    const handlePopState = () => setRecipeId(getRecipeIdFromPath(window.location.pathname));
+    const handlePopState = () => {
+      setRecipeId(getRecipeIdFromPath(window.location.pathname));
+      setLocationSearch(window.location.search);
+    };
     window.addEventListener('popstate', handlePopState);
 
     return () => window.removeEventListener('popstate', handlePopState);
@@ -56,6 +60,7 @@ function App() {
     }
 
     setRecipeId(null);
+    setLocationSearch('');
   };
 
   const handleSearch = async (event, submittedIngredients = ingredients) => {
@@ -101,7 +106,12 @@ function App() {
       </header>
 
       {recipeId ? (
-        <RecipeDetailsPage key={recipeId} recipeId={recipeId} onBack={navigateHome} />
+        <RecipeDetailsPage
+          key={recipeId}
+          recipeId={recipeId}
+          locationSearch={locationSearch}
+          onBack={navigateHome}
+        />
       ) : (
       <main>
         <section className="hero-section">
@@ -151,7 +161,7 @@ function App() {
                 </div>
                 <span>{recipes.length} ideas</span>
               </div>
-              <RecipeGrid recipes={recipes} />
+              <RecipeGrid recipes={recipes} pantryIngredients={lastSearch} />
             </>
           )}
           {!loading && !error && !hasSearched && (
