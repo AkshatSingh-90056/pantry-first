@@ -1,10 +1,9 @@
 const express = require('express');
 const cors = require('cors');
 require('dotenv').config();
-const { findRecipesByIngredients, getRecipeInformation } = require('./services/spoonacularService');
+const spoonacularService = require('./services/spoonacularService');
 const { mapRecipeSummaries, mapRecipeDetail } = require('./mappers/recipeMapper');
 
-const app = express();
 const PORT = process.env.PORT || 5000;
 const SUPPORTED_DIETARY_FILTERS = new Set(['vegetarian', 'vegan', 'gluten-free']);
 
@@ -33,38 +32,49 @@ function isValidRecipePayload(recipe, requestedId) {
   );
 }
 
-app.use(cors());
-app.use(express.json());
+function sendError(res, status, code, message) {
+  return res.status(status).json({ error: { code, message } });
+}
 
-app.get('/api/health', (req, res) => {
+function sendProviderError(res, error) {
+  if (error instanceof spoonacularService.RecipeProviderError) {
+    console.error('Recipe provider request failed:', { status: error.status, code: error.code });
+    return sendError(res, error.status, error.code, error.publicMessage);
+  }
+
+  console.error('Unexpected recipe request failure.');
+  return sendError(res, 500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
+}
+
+function createApp(recipeService = spoonacularService) {
+  const app = express();
+
+  app.use(cors());
+  app.use(express.json());
+
+  app.get('/api/health', (req, res) => {
   res.status(200).json({ message: 'Pantry First server is running smoothly.' });
 });
 
-app.get('/api/recipes', async (req, res) => {
+  app.get('/api/recipes', async (req, res) => {
   const ingredients = typeof req.query.ingredients === 'string' ? req.query.ingredients.trim() : '';
   const dietaryFilters = parseDietaryFilters(req.query.diet);
 
   if (!ingredients) {
-    return res.status(400).json({ error: 'Ingredients query parameter is required.' });
+    return sendError(res, 400, 'INVALID_INGREDIENTS', 'Ingredients query parameter is required.');
   }
 
   try {
-    const recipes = await findRecipesByIngredients(ingredients, dietaryFilters);
+    const recipes = await recipeService.findRecipesByIngredients(ingredients, dietaryFilters);
     return res.status(200).json(mapRecipeSummaries(recipes));
   } catch (error) {
-    console.error('Spoonacular API error:', error.response?.data || error.message);
-    return res.status(500).json({ error: 'Failed to fetch recipes' });
+    return sendProviderError(res, error);
   }
 });
 
-app.get('/api/recipes/:id', async (req, res) => {
+  app.get('/api/recipes/:id', async (req, res) => {
   if (!/^[1-9]\d*$/.test(req.params.id) || !Number.isSafeInteger(Number(req.params.id))) {
-    return res.status(400).json({
-      error: {
-        code: 'INVALID_RECIPE_ID',
-        message: 'Recipe ID must be a positive integer.',
-      },
-    });
+    return sendError(res, 400, 'INVALID_RECIPE_ID', 'Recipe ID must be a positive integer.');
   }
 
   const recipeId = Number(req.params.id);
@@ -74,82 +84,28 @@ app.get('/api/recipes/:id', async (req, res) => {
   let recipe;
 
   try {
-    recipe = await getRecipeInformation(recipeId);
+    recipe = await recipeService.getRecipeInformation(recipeId);
   } catch (error) {
-    if (!error.isSpoonacularError && error.code !== 'SPOONACULAR_NOT_CONFIGURED') {
-      console.error('Unexpected recipe detail error.');
-      return res.status(500).json({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'An unexpected error occurred.',
-        },
-      });
-    }
-
-    const upstreamStatus = error.response?.status;
-
-    if (upstreamStatus === 404) {
-      return res.status(404).json({
-        error: {
-          code: 'RECIPE_NOT_FOUND',
-          message: 'Recipe could not be found.',
-        },
-      });
-    }
-
-    if (upstreamStatus === 402 || upstreamStatus === 429) {
-      return res.status(503).json({
-        error: {
-          code: 'RECIPE_PROVIDER_QUOTA',
-          message: 'Recipe information is temporarily unavailable.',
-        },
-      });
-    }
-
-    if (error.code === 'SPOONACULAR_NOT_CONFIGURED') {
-      console.error('Recipe provider is not configured.');
-      return res.status(500).json({
-        error: {
-          code: 'INTERNAL_ERROR',
-          message: 'An unexpected error occurred.',
-        },
-      });
-    }
-
-    console.error('Recipe detail provider request failed:', {
-      status: upstreamStatus || null,
-      code: error.code || null,
-    });
-    return res.status(502).json({
-      error: {
-        code: 'RECIPE_PROVIDER_UNAVAILABLE',
-        message: 'Recipe information is temporarily unavailable.',
-      },
-    });
+    return sendProviderError(res, error);
   }
 
   if (!isValidRecipePayload(recipe, recipeId)) {
     console.error('Recipe detail provider returned an invalid payload.');
-    return res.status(502).json({
-      error: {
-        code: 'RECIPE_PROVIDER_UNAVAILABLE',
-        message: 'Recipe information is temporarily unavailable.',
-      },
-    });
+    return sendError(res, 502, 'RECIPE_PROVIDER_INVALID_RESPONSE', 'Recipe information could not be retrieved. Please try again.');
   }
 
   try {
     return res.status(200).json(mapRecipeDetail(recipe, hasPantryContext ? pantryContext : undefined));
   } catch (error) {
     console.error('Recipe detail mapping failed:', error.message);
-    return res.status(500).json({
-      error: {
-        code: 'INTERNAL_ERROR',
-        message: 'An unexpected error occurred.',
-      },
-    });
+    return sendError(res, 500, 'INTERNAL_ERROR', 'An unexpected error occurred.');
   }
 });
+
+  return app;
+}
+
+const app = createApp();
 
 if (require.main === module) {
   app.listen(PORT, () => {
@@ -158,3 +114,4 @@ if (require.main === module) {
 }
 
 module.exports = app;
+module.exports.createApp = createApp;
