@@ -1,4 +1,4 @@
-import ingredientAtlas from '../../assets/ingredient-atlas.png';
+import ingredientAtlas from '../../assets/ingredient-atlas.webp';
 
 const atlasPositions = {
   topLeft: '0% 0%',
