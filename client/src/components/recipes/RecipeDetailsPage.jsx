@@ -5,43 +5,13 @@ import PantryMatch from './PantryMatch';
 import CookingMode from './CookingMode';
 import StateMessage from '../common/StateMessage';
 import { parseIngredientInput } from '../../utils/recipeUtils';
+import { formatScaledIngredient, isValidServingCount } from '../../utils/servingUtils';
 
 function formatTag(tag) {
   return tag
     .split('-')
     .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
     .join(' ');
-}
-
-function isValidServingCount(value) {
-  return typeof value === 'number' && Number.isFinite(value) && value > 0;
-}
-
-function formatAmount(value) {
-  return String(Math.round((value + Number.EPSILON) * 100) / 100);
-}
-
-function formatIngredient(ingredient, desiredServings, originalServings) {
-  const hasNumericAmount = typeof ingredient.amount === 'number' && Number.isFinite(ingredient.amount);
-  const canDisplayNumericAmount = hasNumericAmount && ingredient.amount >= 0;
-  const canScale = hasNumericAmount
-    && ingredient.amount > 0
-    && isValidServingCount(originalServings)
-    && isValidServingCount(desiredServings);
-  const displayAmount = canScale
-    ? ingredient.amount * (desiredServings / originalServings)
-    : canDisplayNumericAmount
-      ? ingredient.amount
-      : null;
-
-  if (displayAmount === null || !Number.isFinite(displayAmount)) {
-    return ingredient.original || ingredient.name || 'Ingredient unavailable';
-  }
-
-  const amount = `${formatAmount(displayAmount)}${ingredient.unit ? ` ${ingredient.unit}` : ''}`;
-  const name = ingredient.name || 'Ingredient unavailable';
-
-  return `${amount} ${name}`;
 }
 
 function RecipeDetailsPage({ recipeId, locationSearch = window.location.search, onBack }) {
@@ -280,7 +250,7 @@ function RecipeDetailsPage({ recipeId, locationSearch = window.location.search, 
               <ul className="recipe-detail-list">
                 {recipe.ingredients.map((ingredient, index) => (
                   <li key={`${ingredient.name || ingredient.original}-${index}`}>
-                    {formatIngredient(ingredient, displayedServings, originalServings)}
+                    {formatScaledIngredient(ingredient, displayedServings, originalServings)}
                     {ingredient.note && ingredient.amount !== null && (
                       <span className="recipe-detail-note"> · {ingredient.note}</span>
                     )}
