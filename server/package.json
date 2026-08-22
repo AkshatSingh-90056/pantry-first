@@ -4,7 +4,8 @@
   "description": "",
   "main": "index.js",
   "scripts": {
-    "test": "node --test"
+    "test": "node --test",
+    "migrate": "node-pg-migrate --migrations-dir migrations --database-url-var DATABASE_URL"
   },
   "keywords": [],
   "author": "",
@@ -14,6 +15,8 @@
     "axios": "^1.19.0",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "node-pg-migrate": "^9.0.0",
+    "pg": "^8.23.0"
   }
 }
